@@ -6,7 +6,6 @@ if(length(X)~=length(y))
 end
 n = length(X);
 syms x;
-y = y';
 y(n, n) = 0;
 for column = 2:n
     for row = column:n
