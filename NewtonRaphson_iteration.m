@@ -1,4 +1,4 @@
-function [iterations,root,error,fval,fdash] = NewtonRaphson_iteration(f,x0,n,t)
+function [iterations,root,error,fval,fdash,size] = NewtonRaphson_iteration(fx,x0,n,t)
 %Newton-Raphson's method  
 %   Open method for root finding
 root = zeros(1,n);
@@ -7,13 +7,15 @@ error = zeros(1,n);
 fval = zeros(1,n);
 fdash = zeros(1,n);
 i=1;
+Fx=str2func(['@(x)',fx]);
+f=str2sym(fx);
 y = diff(f);
 Y = matlabFunction(y);
-fx = matlabFunction(f);
 X = x0;
 while i<n
     iterations(i) = i;
-    fval(i) = feval(fx,X); 
+    size = i;
+    fval(i) = feval(Fx,X); 
     fdash(i) = feval(Y,X);
     root(i) = X-(fval(i)/fdash(i));
     if(root(i) ~= 0)

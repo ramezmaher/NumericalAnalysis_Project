@@ -1,13 +1,15 @@
-function [iterations, root, error, fval] = Secant(fx,x0,n,t,x)
+function [iterations, root, error, fval,size] = Secant(fx,x0,n,t,x)
 iterations = zeros(1,n);
 root = zeros(1,n);
 error = zeros(1,n);
 fval = zeros(1,n);
-f = matlabFunction(fx);
+f = str2func(['@(x)',fx]);
 X=x0;
 Xp=x;
 i=1;
 while i<=n
+    iterations(i)=i;
+    size=i;
     fval(i) = feval(f,X);
     fdash = feval(f,Xp);
     root(i) = X-((fval(i)*(Xp-X))/ fdash - fval(i));
