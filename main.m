@@ -190,6 +190,7 @@ xlabel('x Axis');
 ylabel('F(x) Axis');
 legend('Input point', 'Fitting curve');
 set(handles.Function, 'String', char(R));
+set(handles.Function, 'FontSize', 10);
 
 
 % --- Executes on button press in Choose_File.
