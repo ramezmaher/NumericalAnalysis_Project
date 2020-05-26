@@ -1,0 +1,300 @@
+classdef RootFinder < matlab.apps.AppBase
+
+    % Properties that correspond to app components
+    properties (Access = public)
+        UIFigure                      matlab.ui.Figure
+        RootFinderLabel               matlab.ui.control.Label
+        InputPanel                    matlab.ui.container.Panel
+        InsertequationEditFieldLabel  matlab.ui.control.Label
+        InsertequationEditField       matlab.ui.control.EditField
+        ChoosemethodDropDownLabel     matlab.ui.control.Label
+        ChoosemethodDropDown          matlab.ui.control.DropDown
+        ofIterationsEditFieldLabel    matlab.ui.control.Label
+        ofIterationsEditField         matlab.ui.control.NumericEditField
+        PrecisionEditFieldLabel       matlab.ui.control.Label
+        PrecisionEditField            matlab.ui.control.NumericEditField
+        InitialPointEditFieldLabel    matlab.ui.control.Label
+        InitialPointEditField         matlab.ui.control.NumericEditField
+        SolveButton                   matlab.ui.control.Button
+        SecondPointEditFieldLabel     matlab.ui.control.Label
+        SecondPointEditField          matlab.ui.control.NumericEditField
+        forclosedmethodsLabel         matlab.ui.control.Label
+        forfixediterationLabel        matlab.ui.control.Label
+        MagicFormulaEditFieldLabel    matlab.ui.control.Label
+        MagicFormulaEditField         matlab.ui.control.EditField
+        OutputPanel                   matlab.ui.container.Panel
+        UIAxes2                       matlab.ui.control.UIAxes
+        UITable                       matlab.ui.control.Table
+    end
+
+    methods (Access = private)
+
+        % Button pushed function: SolveButton
+        function SolveButtonPushed(app, event)
+            method = app.ChoosemethodDropDown.Value;
+            fx = app.InsertequationEditField.Value;
+            n = app.ofIterationsEditField.Value;
+            p = app.PrecisionEditField.Value;
+            x1 = app.InitialPointEditField.Value;
+            method=method-48;
+            switch(method)
+                case 1 
+                  fprintf('Excellent!\n' );
+                case 2 
+                  fprintf('Well done\n' );
+                case 4 %fixed point
+                  gx = app.MagicFormulaEditField.Value;
+                  [it,size,xold,xnew,er] = FixedPoint_iteration(gx,n,p,x1);
+                  XN=transpose(xnew);
+                  E=transpose(er);
+                  I=transpose(it);
+                  t = table(I(1:size),XN(1:size),E(1:size));
+                  app.UITable.Data=t;
+                  n=(x1-10):1:(x1+10);
+                  g=str2func(['@(x)',gx]);
+                  z=feval(g,n);
+                  y=n;
+                  app.UIAxes2.cla;
+                  for k=1:size
+                      plot(app.UIAxes2,n,z,'b-');
+                      hold(app.UIAxes2, 'on')
+                      plot(app.UIAxes2,n,y,'r-');
+                      hold(app.UIAxes2, 'on')
+                      plot(app.UIAxes2,[xold(k) xold(k)],[xold(k) feval(g,xold(k))],'k-')
+                      plot(app.UIAxes2,[xold(k) xnew(k)],[xold(k) feval(g,xnew(k))],'k--')
+                  end
+                case 3 %regula falsi
+                  fprintf('You passed\n' );
+                case 5 % newton
+                   [it,r,xold,er,size] = NewtonRaphson_iteration(fx,x1,n,p);
+                   I=transpose(it);
+                   R=transpose(r);
+                   E=transpose(er);
+                   t = table(I(1:size),R(1:size),E(1:size));
+                   app.UITable.Data=t;
+                   f=str2func(['@(x)',fx]);
+                   n1=x1+2;
+                   n2=x1-2;
+                   n = n2:1:n1;
+                   y=feval(f,n);
+                   app.UIAxes2.cla;
+                   for k=1:size
+                   plot(app.UIAxes2,n,y,'r-');
+                   hold(app.UIAxes2, 'on')
+                   plot(app.UIAxes2,[xold(k) xold(k)],[0 feval(f,xold(k))],'k--')
+                   hold(app.UIAxes2, 'on')
+                   plot(app.UIAxes2,[xold(k) r(k)],[feval(f,xold(k)) 0],'k-')
+                   hold(app.UIAxes2, 'on')
+                   end
+                case 6 %secant     
+                    x2=app.SecondPointEditField.Value;
+                   [it, r, er,size,point1,point2] = Secant(fx,x1,n,p,x2);
+                   I=transpose(it);
+                   R=transpose(r);
+                   E=transpose(er);
+                   t = table(I(1:size),R(1:size),E(1:size));
+                   app.UITable.Data=t;
+                   f=str2func(['@(x)',fx]);
+                   n1=x1+4;
+                   n2=n1-4;
+                   n = n2:1:n1;
+                   y=feval(f,n);
+                   for k=1:size    
+                   plot(app.UIAxes2,n,y,'r-');
+                   hold(app.UIAxes2, 'on')
+                   end
+                otherwise
+                  fprintf("error");
+            end
+        end
+    end
+
+    % App initialization and construction
+    methods (Access = private)
+
+        % Create UIFigure and components
+        function createComponents(app)
+
+            % Create UIFigure
+            app.UIFigure = uifigure;
+            app.UIFigure.Color = [0.9412 0.9412 0.9412];
+            app.UIFigure.Position = [100 100 1166 742];
+            app.UIFigure.Name = 'UI Figure';
+
+            % Create RootFinderLabel
+            app.RootFinderLabel = uilabel(app.UIFigure);
+            app.RootFinderLabel.HorizontalAlignment = 'center';
+            app.RootFinderLabel.FontName = 'Microsoft Tai Le';
+            app.RootFinderLabel.FontSize = 26;
+            app.RootFinderLabel.FontWeight = 'bold';
+            app.RootFinderLabel.FontAngle = 'italic';
+            app.RootFinderLabel.FontColor = [0 0.451 0.7412];
+            app.RootFinderLabel.Position = [482 686 149 34];
+            app.RootFinderLabel.Text = 'Root Finder';
+
+            % Create InputPanel
+            app.InputPanel = uipanel(app.UIFigure);
+            app.InputPanel.Title = 'Input';
+            app.InputPanel.Position = [15 44 441 616];
+
+            % Create InsertequationEditFieldLabel
+            app.InsertequationEditFieldLabel = uilabel(app.InputPanel);
+            app.InsertequationEditFieldLabel.HorizontalAlignment = 'right';
+            app.InsertequationEditFieldLabel.FontSize = 14;
+            app.InsertequationEditFieldLabel.FontAngle = 'italic';
+            app.InsertequationEditFieldLabel.FontColor = [0 0.451 0.7412];
+            app.InsertequationEditFieldLabel.Position = [-1 454 98 22];
+            app.InsertequationEditFieldLabel.Text = 'Insert equation';
+
+            % Create InsertequationEditField
+            app.InsertequationEditField = uieditfield(app.InputPanel, 'text');
+            app.InsertequationEditField.FontSize = 14;
+            app.InsertequationEditField.FontAngle = 'italic';
+            app.InsertequationEditField.FontColor = [0 0.451 0.7412];
+            app.InsertequationEditField.Position = [112 454 323 22];
+
+            % Create ChoosemethodDropDownLabel
+            app.ChoosemethodDropDownLabel = uilabel(app.InputPanel);
+            app.ChoosemethodDropDownLabel.HorizontalAlignment = 'right';
+            app.ChoosemethodDropDownLabel.FontAngle = 'italic';
+            app.ChoosemethodDropDownLabel.FontColor = [0 0.451 0.7412];
+            app.ChoosemethodDropDownLabel.Position = [84 527 90 22];
+            app.ChoosemethodDropDownLabel.Text = 'Choose method';
+
+            % Create ChoosemethodDropDown
+            app.ChoosemethodDropDown = uidropdown(app.InputPanel);
+            app.ChoosemethodDropDown.Items = {'Default', 'Bisection', 'Regula-falsi', 'Fixed Point Iteration', 'Newton Iteration', 'Secant'};
+            app.ChoosemethodDropDown.ItemsData = {'1', '2', '3', '4', '5', '6'};
+            app.ChoosemethodDropDown.FontAngle = 'italic';
+            app.ChoosemethodDropDown.FontColor = [0 0.451 0.7412];
+            app.ChoosemethodDropDown.Position = [189 527 162 22];
+            app.ChoosemethodDropDown.Value = '1';
+
+            % Create ofIterationsEditFieldLabel
+            app.ofIterationsEditFieldLabel = uilabel(app.InputPanel);
+            app.ofIterationsEditFieldLabel.HorizontalAlignment = 'right';
+            app.ofIterationsEditFieldLabel.FontColor = [0 0.451 0.7412];
+            app.ofIterationsEditFieldLabel.Position = [23 379 78 22];
+            app.ofIterationsEditFieldLabel.Text = '# of Iterations';
+
+            % Create ofIterationsEditField
+            app.ofIterationsEditField = uieditfield(app.InputPanel, 'numeric');
+            app.ofIterationsEditField.FontColor = [0 0.451 0.7412];
+            app.ofIterationsEditField.Position = [116 379 74 22];
+            app.ofIterationsEditField.Value = 50;
+
+            % Create PrecisionEditFieldLabel
+            app.PrecisionEditFieldLabel = uilabel(app.InputPanel);
+            app.PrecisionEditFieldLabel.HorizontalAlignment = 'right';
+            app.PrecisionEditFieldLabel.FontColor = [0 0.451 0.7412];
+            app.PrecisionEditFieldLabel.Position = [292 379 55 22];
+            app.PrecisionEditFieldLabel.Text = 'Precision';
+
+            % Create PrecisionEditField
+            app.PrecisionEditField = uieditfield(app.InputPanel, 'numeric');
+            app.PrecisionEditField.FontColor = [0 0.451 0.7412];
+            app.PrecisionEditField.Position = [362 379 73 22];
+            app.PrecisionEditField.Value = 1e-05;
+
+            % Create InitialPointEditFieldLabel
+            app.InitialPointEditFieldLabel = uilabel(app.InputPanel);
+            app.InitialPointEditFieldLabel.HorizontalAlignment = 'right';
+            app.InitialPointEditFieldLabel.FontColor = [0 0.451 0.7412];
+            app.InitialPointEditFieldLabel.Position = [38 313 64 22];
+            app.InitialPointEditFieldLabel.Text = 'Initial Point';
+
+            % Create InitialPointEditField
+            app.InitialPointEditField = uieditfield(app.InputPanel, 'numeric');
+            app.InitialPointEditField.FontColor = [0 0.451 0.7412];
+            app.InitialPointEditField.Position = [117 313 73 22];
+
+            % Create SolveButton
+            app.SolveButton = uibutton(app.InputPanel, 'push');
+            app.SolveButton.ButtonPushedFcn = createCallbackFcn(app, @SolveButtonPushed, true);
+            app.SolveButton.FontColor = [0 0.451 0.7412];
+            app.SolveButton.Position = [147 92 139 91];
+            app.SolveButton.Text = 'Solve';
+
+            % Create SecondPointEditFieldLabel
+            app.SecondPointEditFieldLabel = uilabel(app.InputPanel);
+            app.SecondPointEditFieldLabel.HorizontalAlignment = 'right';
+            app.SecondPointEditFieldLabel.FontColor = [0 0.451 0.7412];
+            app.SecondPointEditFieldLabel.Position = [269 313 77 22];
+            app.SecondPointEditFieldLabel.Text = 'Second Point';
+
+            % Create SecondPointEditField
+            app.SecondPointEditField = uieditfield(app.InputPanel, 'numeric');
+            app.SecondPointEditField.FontColor = [0 0.451 0.7412];
+            app.SecondPointEditField.Position = [361 313 74 22];
+
+            % Create forclosedmethodsLabel
+            app.forclosedmethodsLabel = uilabel(app.InputPanel);
+            app.forclosedmethodsLabel.FontColor = [0 0.451 0.7412];
+            app.forclosedmethodsLabel.Position = [271 292 107 22];
+            app.forclosedmethodsLabel.Text = 'for closed methods';
+
+            % Create forfixediterationLabel
+            app.forfixediterationLabel = uilabel(app.InputPanel);
+            app.forfixediterationLabel.FontColor = [0 0.451 0.7412];
+            app.forfixediterationLabel.Position = [15 218 94 22];
+            app.forfixediterationLabel.Text = 'for fixed iteration';
+
+            % Create MagicFormulaEditFieldLabel
+            app.MagicFormulaEditFieldLabel = uilabel(app.InputPanel);
+            app.MagicFormulaEditFieldLabel.HorizontalAlignment = 'right';
+            app.MagicFormulaEditFieldLabel.FontColor = [0 0.451 0.7412];
+            app.MagicFormulaEditFieldLabel.Position = [11 239 82 22];
+            app.MagicFormulaEditFieldLabel.Text = 'MagicFormula';
+
+            % Create MagicFormulaEditField
+            app.MagicFormulaEditField = uieditfield(app.InputPanel, 'text');
+            app.MagicFormulaEditField.Position = [108 239 327 22];
+
+            % Create OutputPanel
+            app.OutputPanel = uipanel(app.UIFigure);
+            app.OutputPanel.Title = 'Output';
+            app.OutputPanel.Position = [474 19 632 668];
+
+            % Create UIAxes2
+            app.UIAxes2 = uiaxes(app.OutputPanel);
+            title(app.UIAxes2, 'Graphical representation')
+            xlabel(app.UIAxes2, 'X')
+            ylabel(app.UIAxes2, 'Y')
+            app.UIAxes2.PlotBoxAspectRatio = [1 0.70193740685544 0.70193740685544];
+            app.UIAxes2.Box = 'on';
+            app.UIAxes2.XGrid = 'on';
+            app.UIAxes2.YGrid = 'on';
+            app.UIAxes2.Position = [22 25 588 435];
+
+            % Create UITable
+            app.UITable = uitable(app.OutputPanel);
+            app.UITable.ColumnName = {'iteration'; 'root'; 'approximate error'};
+            app.UITable.RowName = {};
+            app.UITable.Position = [66 456 528 185];
+        end
+    end
+
+    methods (Access = public)
+
+        % Construct app
+        function app = RootFinder
+
+            % Create and configure components
+            createComponents(app)
+
+            % Register the app with App Designer
+            registerApp(app, app.UIFigure)
+
+            if nargout == 0
+                clear app
+            end
+        end
+
+        % Code that executes before app deletion
+        function delete(app)
+
+            % Delete UIFigure when app is deleted
+            delete(app.UIFigure)
+        end
+    end
+end
