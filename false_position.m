@@ -1,4 +1,4 @@
-function [iterations,xl,xu,xr,fxr] = false_position(func, lower, upper, ea, imax)
+function [iterations,xl,xu,xr,error] = false_position(func, lower, upper, ea, imax)
 
 % PREALLOCATING ARRAYS USED
 xl = zeros(1,imax);
@@ -7,6 +7,7 @@ xr = zeros(1,imax);
 fxr = zeros(1,imax);
 fxl = zeros(1,imax);
 fxu = zeros(1,imax);
+error = zeros(1,imax);
 iterations = 0;
 
 xl(1) = lower;
@@ -32,8 +33,11 @@ for i = 1:imax
         xu(i+1) = xu(i); fxu(i+1) = fxu(i);
         xl(i+1) = xr(i); fxl(i+1) = fxr(i);
     end
-    if (i>1 && (abs(xr(i)-xr(i-1))<ea))
-        break;
+    if (i>1)
+        error(i) = abs(xr(i)-xr(i-1));
+        if (error(i) < ea)
+            break;
+        end
     end
 end
             
